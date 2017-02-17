@@ -167,9 +167,8 @@ fi
 $CLI volume heal $V0 split-brain latest-mtime /file5
 EXPECT "0" echo $?
 
-#TODO: Uncomment the below after posix_do_utimes() supports utimensat(2) accuracy
-#TEST [ $LATEST_MTIME -eq $mtime1 ]
-#TEST [ $LATEST_MTIME -eq $mtime2 ]
+TEST [ $LATEST_MTIME -eq $mtime1 ]
+TEST [ $LATEST_MTIME -eq $mtime2 ]
 
 ################ Heal file6 using the latest-mtime option and its gfid  ##############
 subvolume=$(get_replicate_subvol_number file6)

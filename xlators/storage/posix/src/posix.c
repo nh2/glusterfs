@@ -379,7 +379,11 @@ posix_do_utimes (xlator_t *this,
                  int valid)
 {
         int32_t ret = -1;
+#ifdef HAVE_UTIMENSAT
+        struct timespec tv[2]    = {{0,},{0,}};
+#else
         struct timeval tv[2]     = {{0,},{0,}};
+#endif
         struct stat stat;
         int    is_symlink = 0;
 
@@ -395,23 +399,43 @@ posix_do_utimes (xlator_t *this,
 
         if ((valid & GF_SET_ATTR_ATIME) == GF_SET_ATTR_ATIME) {
                 tv[0].tv_sec  = stbuf->ia_atime;
+#ifdef HAVE_UTIMENSAT
+                tv[0].tv_nsec = stbuf->ia_atime_nsec;
+#else
                 tv[0].tv_usec = stbuf->ia_atime_nsec / 1000;
+#endif
         } else {
                 /* atime is not given, use current values */
                 tv[0].tv_sec  = ST_ATIM_SEC (&stat);
+#ifdef HAVE_UTIMENSAT
+                tv[0].tv_nsec = ST_ATIM_NSEC (&stat);
+#else
                 tv[0].tv_usec = ST_ATIM_NSEC (&stat) / 1000;
+#endif
         }
 
         if ((valid & GF_SET_ATTR_MTIME) == GF_SET_ATTR_MTIME) {
                 tv[1].tv_sec  = stbuf->ia_mtime;
+#ifdef HAVE_UTIMENSAT
+                tv[1].tv_nsec = stbuf->ia_mtime_nsec;
+#else
                 tv[1].tv_usec = stbuf->ia_mtime_nsec / 1000;
+#endif
         } else {
                 /* mtime is not given, use current values */
                 tv[1].tv_sec  = ST_MTIM_SEC (&stat);
+#ifdef HAVE_UTIMENSAT
+                tv[1].tv_nsec = ST_MTIM_NSEC (&stat);
+#else
                 tv[1].tv_usec = ST_MTIM_NSEC (&stat) / 1000;
+#endif
         }
 
+#ifdef HAVE_UTIMENSAT
+        ret = sys_utimensat (0, path, tv, AT_SYMLINK_NOFOLLOW);
+#else
         ret = lutimes (path, tv);
+#endif
         if ((ret == -1) && (errno == ENOSYS)) {
                 gf_msg_debug (this->name, 0, "%s (%s)",
                         path, strerror (errno));
@@ -420,7 +444,12 @@ posix_do_utimes (xlator_t *this,
                         goto out;
                 }
 
+#ifdef HAVE_UTIMENSAT
+                /* dirfd = 0 is ignored because `dest` is an absolute path. */
+                ret = sys_utimensat (0, path, tv, AT_SYMLINK_NOFOLLOW);
+#else
                 ret = sys_utimes (path, tv);
+#endif
         }
 
 out:
