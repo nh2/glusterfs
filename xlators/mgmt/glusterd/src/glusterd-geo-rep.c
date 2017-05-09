@@ -5174,6 +5174,7 @@ glusterd_op_sys_exec (dict_t *dict, char **op_errstr, dict_t *rsp_dict)
                 runner_add_arg (&runner, cmd_args[i]);
         runner_redir (&runner, STDOUT_FILENO, RUN_PIPE);
         synclock_unlock (&priv->big_lock);
+        runner_log (&runner, "glusterd-geo-rep", GF_LOG_DEBUG, "running");
         ret = runner_start (&runner);
         if (ret == -1) {
                 snprintf (errmsg, sizeof (errmsg), "Unable to "
