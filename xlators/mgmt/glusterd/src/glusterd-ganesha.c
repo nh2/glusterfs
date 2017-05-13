@@ -122,15 +122,15 @@ manage_service (char *action)
         int     i               = 0;
         int     ret             = 0;
         struct service_command sc_list[] = {
-                { .binary  = "/bin/systemctl",
+                { .binary  = "systemctl",
                   .service = "nfs-ganesha",
                   .action  = sc_systemctl_action
                 },
-                { .binary  = "/sbin/invoke-rc.d",
+                { .binary  = "invoke-rc.d",
                   .service = "nfs-ganesha",
                   .action  = sc_service_action
                 },
-                { .binary  = "/sbin/service",
+                { .binary  = "service",
                   .service = "nfs-ganesha",
                   .action  = sc_service_action
                 },
