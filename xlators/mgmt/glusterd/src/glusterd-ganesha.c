@@ -123,15 +123,15 @@ manage_service (char *action)
         int     i               = 0;
         int     ret             = 0;
         struct service_command sc_list[] = {
-                { .binary  = "/usr/bin/systemctl",
+                { .binary  = "systemctl",
                   .service = "nfs-ganesha",
                   .action  = sc_systemctl_action
                 },
-                { .binary  = "/sbin/invoke-rc.d",
+                { .binary  = "invoke-rc.d",
                   .service = "nfs-ganesha",
                   .action  = sc_service_action
                 },
-                { .binary  = "/sbin/service",
+                { .binary  = "service",
                   .service = "nfs-ganesha",
                   .action  = sc_service_action
                 },
@@ -144,7 +144,7 @@ manage_service (char *action)
                 if (ret == 0) {
                         gf_msg_debug (THIS->name, 0,
                                 "%s found.", sc_list[i].binary);
-                        if (strcmp (sc_list[i].binary, "/usr/bin/systemctl") == 0)
+                        if (strcmp (sc_list[i].binary, "systemctl") == 0)
                                 ret = sc_systemctl_action (&sc_list[i], action);
                         else
                                 ret = sc_service_action (&sc_list[i], action);
