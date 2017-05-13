@@ -5,7 +5,7 @@ EXTRA_DIST = glustereventsd.py __init__.py  eventsapiconf.py.in \
 BUILT_SOURCES = eventtypes.py
 CLEANFILES = eventtypes.py
 
-eventsdir = $(GLUSTERFS_LIBEXECDIR)/events
+eventsdir = $(libexecdir)/glusterfs/events
 events_PYTHON = __init__.py gf_event.py eventsapiconf.py eventtypes.py \
 	utils.py
 
@@ -13,7 +13,7 @@ eventtypes.py: $(top_srcdir)/events/eventskeygen.py
 	$(PYTHON) $(top_srcdir)/events/eventskeygen.py PY_HEADER
 
 if BUILD_EVENTS
-eventspeerscriptdir = $(GLUSTERFS_LIBEXECDIR)
+eventspeerscriptdir = $(libexecdir)/glusterfs
 eventsconfdir = $(sysconfdir)/glusterfs
 eventsconf_DATA = eventsconfig.json
 
@@ -24,10 +24,10 @@ eventspeerscript_SCRIPTS = peer_eventsapi.py
 install-exec-hook:
 	$(mkdir_p) $(DESTDIR)$(sbindir)
 	rm -f $(DESTDIR)$(sbindir)/glustereventsd
-	ln -s $(GLUSTERFS_LIBEXECDIR)/events/glustereventsd.py \
+	ln -s $(libexecdir)/glusterfs/events/glustereventsd.py \
 		$(DESTDIR)$(sbindir)/glustereventsd
 	rm -f $(DESTDIR)$(sbindir)/gluster-eventsapi
-	ln -s $(GLUSTERFS_LIBEXECDIR)/peer_eventsapi.py \
+	ln -s $(libexecdir)/glusterfs/peer_eventsapi.py \
 		$(DESTDIR)$(sbindir)/gluster-eventsapi
 
 uninstall-hook:
