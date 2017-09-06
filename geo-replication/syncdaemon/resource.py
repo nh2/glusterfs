@@ -1317,20 +1317,29 @@ class GLUSTER(AbstractUrl, SlaveLocal, SlaveRemote):
             """
 
             mpi, mpo = os.pipe()
+            logging.exception('inhibit forking')
             mh = Popen.fork()
             if mh:
+                logging.exception('inhibit parent')
                 os.close(mpi)
+                logging.exception('inhibit parent 1')
                 fcntl.fcntl(mpo, fcntl.F_SETFD, fcntl.FD_CLOEXEC)
+                logging.exception('inhibit parent 2')
                 d = None
                 margv = self.make_mount_argv(*a)
+                logging.exception('inhibit parent 3')
                 if self.mntpt:
                     # mntpt is determined pre-mount
                     d = self.mntpt
+                    logging.exception('inhibit parent 4')
                     os.write(mpo, d + '\0')
+                logging.exception('inhibit parent 5')
                 po = Popen(margv, **self.mountkw)
+                logging.exception('inhibit parent 6')
                 self.handle_mounter(po)
+                logging.exception('inhibit parent 7')
                 po.terminate_geterr()
-                logging.debug('auxiliary glusterfs mount in place')
+                logging.exception('auxiliary glusterfs mount in place')
                 if not d:
                     # mntpt is determined during mount
                     d = self.mntpt
@@ -1340,21 +1349,26 @@ class GLUSTER(AbstractUrl, SlaveLocal, SlaveRemote):
                 t.start()
                 tlim = gconf.starttime + int(gconf.connection_timeout)
                 while True:
+                    logging.exception('loop')
                     if not t.isAlive():
+                        logging.exception('loop not alive')
                         break
                     if time.time() >= tlim:
+                        logging.exception('loop finalize')
                         syncdutils.finalize(exval=1)
                     time.sleep(1)
                 os.close(mpo)
                 _, rv = syncdutils.waitpid(mh, 0)
+                logging.exception('waitpid returned %s' % str(rv))
                 if rv:
                     rv = (os.WIFEXITED(rv) and os.WEXITSTATUS(rv) or 0) - \
                          (os.WIFSIGNALED(rv) and os.WTERMSIG(rv) or 0)
-                    logging.warn('stale mount possibly left behind on ' + d)
+                    logging.exception('stale mount possibly left behind on ' + d)
                     raise GsyncdError("cleaning up temp mountpoint %s "
                                       "failed with status %d" %
                                       (d, rv))
             else:
+                logging.exception('inhibit child')
                 rv = 0
                 try:
                     os.setsid()

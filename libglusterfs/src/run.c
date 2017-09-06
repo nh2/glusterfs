@@ -212,10 +212,14 @@ runner_start (runner_t *runner)
         int i = 0;
         sigset_t set;
 
+        runner_log (runner, "nh2 runner_start 1", GF_LOG_DEBUG, "entry");
+
         if (runner->runerr) {
                 errno = runner->runerr;
                 return -1;
         }
+
+        runner_log (runner, "nh2 runner_start 2", GF_LOG_DEBUG, "entry");
 
         GF_ASSERT (runner->argv[0]);
 
@@ -232,10 +236,15 @@ runner_start (runner_t *runner)
                 ret = pipe (pi[i]);
                 if (ret != -1) {
                         runner->chio[i] = fdopen (pi[i][i ? 0 : 1], i ? "r" : "w");
+                        char i_str[30];
+                        sprintf(i_str, "%lu", runner->chio[i]);
+                        runner_log (runner, "nh2 runner_start runner->chio[i]", GF_LOG_DEBUG, i_str);
                         if (!runner->chio[i])
                                 ret = -1;
                 }
         }
+
+        runner_log (runner, "nh2 runner_start 2.1", GF_LOG_DEBUG, "entry");
 
         if (ret != -1)
                 runner->chpid = fork ();
@@ -249,8 +258,10 @@ runner_start (runner_t *runner)
                         sys_close (pi[i][1]);
                 }
                 errno = errno_priv;
+                runner_log (runner, "nh2 runner_start 3", GF_LOG_DEBUG, "entry");
                 return -1;
         case 0:
+                runner_log (runner, "nh2 runner_start 2.2 child", GF_LOG_DEBUG, "entry");
                 for (i = 0; i < 3; i++)
                         sys_close (pi[i][i ? 0 : 1]);
                 sys_close (xpi[0]);
@@ -273,6 +284,13 @@ runner_start (runner_t *runner)
                         }
                 }
 
+                runner_log (runner, "nh2 runner_start 2.3 child", GF_LOG_DEBUG, "entry");
+
+                for (char** arg = runner->argv; *arg != NULL; arg++)
+                {
+                    runner_log (runner, "nh2 runner_start", GF_LOG_DEBUG, *arg);
+                }
+
                 if (ret != -1 ) {
 #ifdef GF_LINUX_HOST_OS
                         DIR *d = NULL;
@@ -282,6 +300,7 @@ runner_start (runner_t *runner)
 
                         d = sys_opendir ("/proc/self/fd");
                         if (d) {
+                                runner_log (runner, "nh2 runner_start 2.4 child", GF_LOG_DEBUG, "entry");
                                 for (;;) {
                                         errno = 0;
                                         de = sys_readdir (d, scratch);
@@ -292,6 +311,7 @@ runner_start (runner_t *runner)
                                             i != dirfd (d) && i != xpi[1])
                                                 sys_close (i);
                                 }
+                                runner_log (runner, "nh2 runner_start 2.5 child", GF_LOG_DEBUG, "entry");
                                 sys_closedir (d);
                         } else
                                 ret = -1;
@@ -311,6 +331,12 @@ runner_start (runner_t *runner)
                         /* save child from inheriting our singal handling */
                         sigemptyset (&set);
                         sigprocmask (SIG_SETMASK, &set, NULL);
+
+                        runner_log (runner, "nh2 runner_start args", GF_LOG_DEBUG, "");
+                        for (char** arg = runner->argv; *arg != NULL; arg++)
+                        {
+                            runner_log (runner, "nh2 runner_start", GF_LOG_DEBUG, *arg);
+                        }
 
                         execvp (runner->argv[0], runner->argv);
                 }
@@ -332,11 +358,14 @@ runner_start (runner_t *runner)
         } else {
                 ret = sys_read (xpi[0], (char *)&errno_priv, sizeof (errno_priv));
                 sys_close (xpi[0]);
-                if (ret <= 0)
+                if (ret <= 0) {
+                        runner_log (runner, "nh2 runner_start 4", GF_LOG_DEBUG, "entry");
                         return 0;
+                }
                 GF_ASSERT (ret == sizeof (errno_priv));
         }
         errno = errno_priv;
+        runner_log (runner, "nh2 runner_start 5", GF_LOG_DEBUG, "entry");
         return -1;
 }
 

@@ -593,7 +593,7 @@ class GMasterCommon(object):
                             for f in to_purge:
                                 os.remove(os.path.join(proc_dir, f))
 
-                time.sleep(5)
+                time.sleep(1)
                 continue
 
             self.status.set_active()

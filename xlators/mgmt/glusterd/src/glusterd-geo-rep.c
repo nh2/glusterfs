@@ -2688,6 +2688,7 @@ glusterd_verify_slave (char *volname, char *slave_url, char *slave_vol,
 {
         int32_t          ret                     = -1;
         runner_t         runner                  = {0,};
+        char             errmsg[PATH_MAX]        = "";
         char             log_file_path[PATH_MAX] = "";
         char             buf[PATH_MAX]           = "";
         char            *tmp                     = NULL;
@@ -2743,10 +2744,38 @@ glusterd_verify_slave (char *volname, char *slave_url, char *slave_vol,
                       runner.argv[3], runner.argv[4], runner.argv[5],
                       runner.argv[6]);
         runner_redir (&runner, STDOUT_FILENO, RUN_PIPE);
+        runner_redir (&runner, STDERR_FILENO, RUN_PIPE);
         synclock_unlock (&priv->big_lock);
-        ret = runner_run (&runner);
+        ret = runner_start (&runner);
+
+        if (ret == -1) {
+                snprintf (errmsg, sizeof (errmsg), "Unable to "
+                          "execute command. Error : %s",
+                          strerror (errno));
+                *op_errstr = gf_strdup (errmsg);
+                gf_msg (this->name, GF_LOG_ERROR, 0, GD_MSG_CMD_EXEC_FAIL, "%s",
+                        errmsg);
+                ret = -1;
+                synclock_lock (&priv->big_lock);
+                goto out;
+        }
+
+        gf_msg_debug (this->name, 0, "glusterd_verify_slave() stderr start");
+        char * ptr = NULL;
+        do {
+                ptr = fgets(buf, sizeof(buf), runner_chio (&runner, STDERR_FILENO));
+                if (ptr) {
+                        gf_msg_debug (this->name, 0, "glusterd_verify_slave() stderr: %s", ptr);
+                } else {
+                        gf_msg_debug (this->name, 0, "glusterd_verify_slave() stderr end");
+                }
+        } while (ptr);
+
+        ret = runner_end (&runner);
         synclock_lock (&priv->big_lock);
+
         if (ret) {
+
                 gf_msg (this->name, GF_LOG_ERROR, 0, GD_MSG_INVALID_SLAVE,
                         "Not a valid slave");
                 ret = glusterd_gsync_read_frm_status (log_file_path,
@@ -5173,9 +5202,11 @@ glusterd_op_sys_exec (dict_t *dict, char **op_errstr, dict_t *rsp_dict)
         for (i=0; i < cmd_args_count; i++)
                 runner_add_arg (&runner, cmd_args[i]);
         runner_redir (&runner, STDOUT_FILENO, RUN_PIPE);
+        runner_redir (&runner, STDERR_FILENO, RUN_PIPE); // nh2
         synclock_unlock (&priv->big_lock);
         ret = runner_start (&runner);
         if (ret == -1) {
+                runner_log (&runner, "nh2 glusterd-geo-rep", GF_LOG_DEBUG, "ret == -1");
                 snprintf (errmsg, sizeof (errmsg), "Unable to "
                           "execute command. Error : %s",
                           strerror (errno));
@@ -5188,8 +5219,22 @@ glusterd_op_sys_exec (dict_t *dict, char **op_errstr, dict_t *rsp_dict)
         }
 
         do {
+                ptr = fgets(buf, sizeof(buf), runner_chio (&runner, STDERR_FILENO));
+                if (ptr) {
+                        gf_msg_debug (this->name, 0, "glusterd_op_sys_exec() stderr: %s", ptr);
+                } else {
+                        gf_msg_debug (this->name, 0, "glusterd_op_sys_exec() stderr end");
+                }
+        } while (ptr);
+
+        do {
+                char i_str[30];
+                sprintf(i_str, "%lu", runner_chio (&runner, STDOUT_FILENO));
+                runner_log (&runner, "nh2 runner_chio (&runner, STDOUT_FILENO)", GF_LOG_DEBUG, i_str);
+
                 ptr = fgets(buf, sizeof(buf), runner_chio (&runner, STDOUT_FILENO));
                 if (ptr) {
+                        runner_log (&runner, "nh2 glusterd-geo-rep", GF_LOG_DEBUG, "ptr OK");
                         ret = dict_get_int32 (rsp_dict, "output_count", &output_count);
                         if (ret)
                                 output_count = 1;
@@ -5217,6 +5262,8 @@ glusterd_op_sys_exec (dict_t *dict, char **op_errstr, dict_t *rsp_dict)
                                 gf_msg (this->name, GF_LOG_ERROR, 0,
                                         GD_MSG_DICT_SET_FAILED, "output_count "
                                         "set failed.");
+                } else {
+                        runner_log (&runner, "nh2 glusterd-geo-rep", GF_LOG_DEBUG, "ptr NULL");
                 }
         } while (ptr);
 

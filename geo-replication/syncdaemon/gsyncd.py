@@ -43,6 +43,17 @@ from syncdutils import get_master_and_slave_data_from_args
 
 ParseError = XET.ParseError if hasattr(XET, 'ParseError') else SyntaxError
 
+import traceback
+old_sleep = time.sleep
+
+def loggedSleep(x, *args, **kwargs):
+  logging.warn("sleeping " + str(x))
+  logging.warn(''.join(traceback.format_stack()))
+  old_sleep(x, *args, **kwargs)
+
+time.sleep = loggedSleep
+
+
 
 class GLogger(Logger):
 
@@ -75,7 +86,7 @@ class GLogger(Logger):
                 'format': "[%(asctime)s.%(nsecs)d] %(lvlnam)s [%(module)s" +
                 lbl + ":%(lineno)s:%(funcName)s] %(ctx)s: %(message)s"}
         lprm.update(kw)
-        lvl = kw.get('level', logging.INFO)
+        lvl = kw.get('level', logging.DEBUG)
         lprm['level'] = lvl
         logging.root = cls("root", lvl)
         logging.setLoggerClass(cls)
@@ -245,7 +256,7 @@ def main_i():
                   default=os.devnull, type=str, action='callback',
                   callback=store_abs)
     op.add_option('--gluster-log-level', metavar='LVL')
-    op.add_option('--changelog-log-level', metavar='LVL', default="INFO")
+    op.add_option('--changelog-log-level', metavar='LVL', default="DEBUG")
     op.add_option('--gluster-params', metavar='PRMS', default='')
     op.add_option(
         '--glusterd-uuid', metavar='UUID', type=str, default='',

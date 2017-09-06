@@ -394,7 +394,7 @@ class Monitor(object):
                              slave_volume=slave_vol,
                              current_slave_host=current_slave_host,
                              brick_path=w[0]['dir'])
-            time.sleep(10)
+            time.sleep(0.5)
         self.status[w[0]['dir']].set_worker_status(self.ST_INCON)
         return ret
 

@@ -388,7 +388,8 @@ def eintr_wrap(func, exc, *a):
             ex = sys.exc_info()[1]
             if not ex.args[0] == EINTR:
                 raise
-
+            else:
+                logging.exception('ignoring EINTR')
 
 def select(*a):
     return eintr_wrap(oselect.select, oselect.error, *a)
