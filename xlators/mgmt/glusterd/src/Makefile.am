@@ -47,7 +47,7 @@ AM_CPPFLAGS = $(GF_CPPFLAGS) -I$(top_srcdir)/libglusterfs/src \
 	-I$(CONTRIBDIR)/rbtree -I$(top_srcdir)/rpc/rpc-lib/src \
 	-I$(CONTRIBDIR)/mount -I$(CONTRIBDIR)/userspace-rcu \
 	-DSBIN_DIR=\"$(sbindir)\" -DDATADIR=\"$(localstatedir)\" \
-	-DGSYNCD_PREFIX=\"$(GLUSTERFS_LIBEXECDIR)\" \
+	-DGSYNCD_PREFIX=\"$(libexecdir)/glusterfs\" \
 	-DCONFDIR=\"$(localstatedir)/run/gluster/shared_storage/nfs-ganesha\" \
 	-DGANESHA_PREFIX=\"$(libexecdir)/ganesha\" \
 	-DSYNCDAEMON_COMPILE=$(SYNCDAEMON_COMPILE) $(XML_CPPFLAGS)

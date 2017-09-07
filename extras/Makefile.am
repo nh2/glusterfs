@@ -1,4 +1,4 @@
-addonexecdir = $(GLUSTERFS_LIBEXECDIR)
+addonexecdir = $(libexecdir)/glusterfs
 addonexec_SCRIPTS = peer_add_secret_pub
 
 EditorModedir = $(docdir)

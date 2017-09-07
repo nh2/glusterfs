@@ -1,4 +1,4 @@
-glusterfinddir = $(GLUSTERFS_LIBEXECDIR)/glusterfind
+glusterfinddir = $(libexecdir)/glusterfs/glusterfind
 
 glusterfind_PYTHON = conf.py utils.py __init__.py \
 	main.py libgfchangelog.py changelogdata.py
