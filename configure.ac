@@ -1057,7 +1057,7 @@ if test "x$prefix" = xNONE; then
 	prefix=$ac_default_prefix
 fi
 GLUSTERFS_LIBEXECDIR="$libexecdir/glusterfs"
-GLUSTERFSD_MISCDIR="$prefix/var/lib/misc/glusterfsd"
+GLUSTERFSD_MISCDIR="$localstatedir/lib/misc/glusterfsd"
 prefix=$old_prefix
 
 ### Dirty hacky stuff to make LOCALSTATEDIR work
