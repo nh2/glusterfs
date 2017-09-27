@@ -1118,7 +1118,7 @@ if test "x$exec_prefix" = xNONE; then
 	exec_prefix="$(eval echo $prefix)"
 fi
 GLUSTERFS_LIBEXECDIR="$(eval echo $libexecdir)/glusterfs"
-GLUSTERFSD_MISCDIR="$(eval echo $prefix)/var/lib/misc/glusterfsd"
+GLUSTERFSD_MISCDIR="$(eval echo $localstatedir)/var/lib/misc/glusterfsd"
 prefix=$old_prefix
 exec_prefix=$old_exec_prefix
 
