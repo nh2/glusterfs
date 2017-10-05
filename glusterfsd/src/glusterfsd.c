@@ -126,6 +126,14 @@ static struct argp_option gf_options[] = {
         {"log-flush-timeout", ARGP_LOG_FLUSH_TIMEOUT, "LOG-FLUSH-TIMEOUT", 0,
          "Set log flush timeout, [default: 2 minutes]"},
 
+        {"connect-max-retries", ARGP_CONNECT_MAX_RETRIES,
+         "N", 0,
+         "Set maximum number of initial connection retries to N"
+         " (0 = disable retries, -1 = infinite) [default: 0]"},
+        {"connect-retry-timeout", ARGP_CONNECT_RETRY_TIMEOUT,
+         "SECONDS", 0,
+         "Set initial connection retry timeout to SECONDS [default: 1.0]"},
+
         {0, 0, 0, 0, "Advanced Options:"},
         {"volfile-server-port", ARGP_VOLFILE_SERVER_PORT_KEY, "PORT", 0,
          "Listening port number of volfile server"},
@@ -300,7 +308,7 @@ set_fuse_mount_options (glusterfs_ctx_t *ctx, dict_t *options)
                                        cmd_args->fuse_attribute_timeout);
 
                 if (ret < 0) {
-                        gf_msg ("glusterfsd", GF_LOG_ERROR, errno, 
+                        gf_msg ("glusterfsd", GF_LOG_ERROR, errno,
                                 glusterfsd_msg_4, ZR_ATTR_TIMEOUT_OPT);
                         goto err;
                 }
@@ -1263,6 +1271,31 @@ no_oom_api:
 
                 break;
 
+        case ARGP_CONNECT_MAX_RETRIES:
+                k = 0;
+
+                if (gf_string2int (arg, &k) == 0 && k >= -1) {
+                        cmd_args->connect_max_retries = k;
+                        break;
+                }
+
+                argp_failure (state, -1, 0,
+                              "unknown connect max retries %s", arg);
+                break;
+
+        case ARGP_CONNECT_RETRY_TIMEOUT:
+                d = 0.0;
+
+                gf_string2double (arg, &d);
+                if (!(d < 0.0)) {
+                        cmd_args->connect_retry_timeout = d;
+                        break;
+                }
+
+                argp_failure (state, -1, 0,
+                              "unknown connect retry timeout %s", arg);
+                break;
+
         case ARGP_SECURE_MGMT_KEY:
                 if (!arg)
                         arg = "yes";
@@ -1579,6 +1612,9 @@ glusterfs_ctx_defaults_init (glusterfs_ctx_t *ctx)
         cmd_args->log_format = gf_logformat_withmsgid;
         cmd_args->log_buf_size = GF_LOG_LRU_BUFSIZE_DEFAULT;
         cmd_args->log_flush_timeout = GF_LOG_FLUSH_TIMEOUT_DEFAULT;
+
+        cmd_args->connect_max_retries = GF_CONNECT_MAX_RETRIES_DEFAULT;
+        cmd_args->connect_retry_timeout = GF_CONNECT_RETRY_TIMEOUT_DEFAULT;
 
         cmd_args->mac_compat = GF_OPTION_DISABLE;
 #ifdef GF_DARWIN_HOST_OS
@@ -1918,6 +1954,9 @@ parse_cmdline (int argc, char *argv[], glusterfs_ctx_t *ctx)
 
 
         ctx->secure_mgmt = cmd_args->secure_mgmt;
+
+        ctx->connect_max_retries = cmd_args->connect_max_retries;
+        ctx->connect_retry_timeout = cmd_args->connect_retry_timeout;
 
         if (ENABLE_DEBUG_MODE == cmd_args->debug_mode) {
                 cmd_args->log_level = GF_LOG_DEBUG;

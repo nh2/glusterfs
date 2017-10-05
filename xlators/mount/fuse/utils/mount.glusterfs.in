@@ -221,6 +221,14 @@ start_glusterfs ()
         cmd_line=$(echo "$cmd_line --volume-name=$volume_name");
     fi
 
+    if [ -n "$connect_max_retries" ]; then
+        cmd_line=$(echo "$cmd_line --connect-max-retries=$connect_max_retries");
+    fi
+
+    if [ -n "$connect_retry_timeout" ]; then
+        cmd_line=$(echo "$cmd_line --connect-retry-timeout=$connect_retry_timeout");
+    fi
+
     if [ -n "$attribute_timeout" ]; then
         cmd_line=$(echo "$cmd_line --attribute-timeout=$attribute_timeout");
     fi
@@ -442,6 +450,12 @@ with_options()
             ;;
         "server-port")
             server_port=$value
+            ;;
+        "connect-max-retries")
+            connect_max_retries=$value
+            ;;
+        "connect-retry-timeout")
+            connect_retry_timeout=$value
             ;;
         "attribute-timeout")
             attribute_timeout=$value

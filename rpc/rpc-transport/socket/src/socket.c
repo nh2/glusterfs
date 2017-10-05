@@ -209,6 +209,8 @@ ssl_do (rpc_transport_t *this, void *buf, size_t len, SSL_trinary_func *func)
 	int               r = (-1);
 	struct pollfd     pfd = {-1,};
 	socket_private_t *priv = NULL;
+	unsigned long     ssl_err = 0;
+	int               ssl_errno = 0;
 
 	GF_VALIDATE_OR_GOTO(this->name,this->private,out);
 	priv = this->private;
@@ -277,9 +279,24 @@ ssl_do (rpc_transport_t *this, void *buf, size_t len, SSL_trinary_func *func)
 			break;
 		case SSL_ERROR_SYSCALL:
 			/* This is what we get when remote disconnects. */
-			gf_log(this->name,GF_LOG_DEBUG,
-			       "syscall error (probably remote disconnect)");
-			errno = ENODATA;
+			ssl_err = ERR_get_error();
+			/* According to SSL_get_error() documentation, we can
+			 * rely on the value of `errno` when this is true. */
+			if (ssl_err == 0 && r == -1) {
+				ssl_errno = errno;
+				gf_log(this->name,GF_LOG_DEBUG,
+				       "SSL syscall error with errno: %s",
+				       strerror (ssl_errno));
+				errno = ssl_errno;
+			} else {
+				gf_log(this->name,GF_LOG_DEBUG,
+				       "SSL syscall error"
+				       " (probably remote disconnect):"
+				       " ERR_get_error() = %lu, r = %d",
+				       ssl_err,
+				       r);
+				errno = ENODATA;
+			}
 			goto out;
 		default:
 			errno = EIO;
@@ -3059,29 +3076,81 @@ socket_fix_ssl_opts (rpc_transport_t *this, socket_private_t *priv,
 }
 
 /*
- * If we might just be trying to connect prematurely, e.g. to a brick that's
- * slow coming up, all we need is a simple retry.  Don't worry about sleeping
+ * For failed connections, all we need is a simple retry.  Don't worry about sleeping
  * in some arbitrary thread.  The connect(2) could already have the exact same
  * effect, and we deal with it in that case so we can deal with it for sleep(2)
  * as well.
+ * This function returns the return value of the last connect(2), and also
+ * `errno` to the one set by it.
  */
 static int
-connect_loop (int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+connect_loop (rpc_transport_t *this,
+              int sockfd, const struct sockaddr *addr, socklen_t addrlen,
+              gf_boolean_t ign_enoent)
 {
         int     ret;
-        int     connect_fails   = 0;
+        int     remote_connect_fails = 0;
+        int     enoent_connect_fails = 0;
+        int     max_retries = this->ctx->connect_max_retries;
+        int     enoent_max_retries = max_retries == 0 ? 5 : max_retries;
+        double  retry_timeout = this->ctx->connect_retry_timeout;
+        int     connect_errno = 0;
+
+        GF_ASSERT (max_retries >= -1);
+        GF_ASSERT (retry_timeout >= 0.0);
 
         for (;;) {
                 ret = connect (sockfd, addr, addrlen);
                 if (ret >= 0) {
                         break;
                 }
-                if ((errno != ENOENT) || (++connect_fails >= 5)) {
-                        break;
+                connect_errno = errno;
+                if (connect_errno == EINTR) {
+                        continue;
+                } else if (connect_errno == ENOENT) {
+                        /* Note this can only happen on a local file socket
+                         * (AF_UNIX), which may be used when the same machine
+                         * is running the server.
+                         */
+                        enoent_connect_fails++;
+                        if (!ign_enoent
+                            || enoent_connect_fails >= enoent_max_retries) {
+                                break;
+                        } else {
+                                gf_log(this->name,GF_LOG_WARNING,
+                                       "Connection failed due to ENOENT"
+                                       " (attempt %d of %d),"
+                                       " will retry in %f seconds",
+                                       enoent_connect_fails,
+                                       5,
+                                       retry_timeout);
+                                continue;
+                        }
+                /* We only retry on error codes that indicate that the *remote*
+                 * side has a problem or the transmission doesn't work. */
+                } else if (connect_errno == ECONNREFUSED
+                           || connect_errno == ETIMEDOUT) {
+                        remote_connect_fails++;
+                        if ((max_retries != -1) // -1 = infinite
+                            && (remote_connect_fails >= max_retries)) {
+                                break;
+                        }
+                        gf_log(this->name,GF_LOG_WARNING,
+                               "Connection failed (attempt %d of %d),"
+                               " will retry in %f seconds;"
+                               " reason: %s",
+                               remote_connect_fails,
+                               max_retries,
+                               retry_timeout,
+                               strerror (connect_errno));
+                        usleep(retry_timeout * 1000000);
+                        continue;
                 }
-                sleep (1);
+                /* An error for which we don't want to retry occured. */
+                break;
         }
 
+        errno = connect_errno;
         return ret;
 }
 
@@ -3249,14 +3318,20 @@ socket_connect (rpc_transport_t *this, int port)
                 }
 
                 this->connect_failed = _gf_false;
-                if (ign_enoent) {
-                        ret = connect_loop (priv->sock,
+                if (ign_enoent || this->ctx->connect_max_retries != 0) {
+                        ret = connect_loop (this,
+                                            priv->sock,
                                             SA (&this->peerinfo.sockaddr),
-                                            this->peerinfo.sockaddr_len);
+                                            this->peerinfo.sockaddr_len,
+                                            ign_enoent);
                 } else {
-                        ret = connect (priv->sock,
-                                       SA (&this->peerinfo.sockaddr),
-                                       this->peerinfo.sockaddr_len);
+                        for (;;) {
+                                ret = connect (priv->sock,
+                                               SA (&this->peerinfo.sockaddr),
+                                               this->peerinfo.sockaddr_len);
+                                if (ret != -1 || errno != EINTR)
+                                        break;
+                        }
                 }
 
                 if (ret == -1 && errno == ENOENT && ign_enoent) {

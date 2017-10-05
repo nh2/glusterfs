@@ -294,6 +294,9 @@
 #define GF_LOG_FLUSH_TIMEOUT_MAX_STR "300"
 #define GF_LOG_LOCALTIME_DEFAULT 0
 
+#define GF_CONNECT_MAX_RETRIES_DEFAULT 0
+#define GF_CONNECT_RETRY_TIMEOUT_DEFAULT 1.0
+
 #define GF_BACKTRACE_LEN        4096
 #define GF_BACKTRACE_FRAME_COUNT 7
 
@@ -407,6 +410,10 @@ struct _cmd_args {
 
         /* Should management connections use SSL? */
         int                secure_mgmt;
+
+        /* Initial connection retries */
+        int                connect_max_retries;
+        double             connect_retry_timeout;
 
         /* Linux-only OOM killer adjustment */
 #ifdef GF_LINUX_HOST_OS
@@ -531,6 +538,10 @@ struct _glusterfs_ctx {
          * fix it.  Thus, an int.
          */
         int                secure_mgmt;
+
+        /* Initial connection retries */
+        int                connect_max_retries; // 0 = off, -1 = infinite
+        double             connect_retry_timeout; // 0.0 = immediate is OK
 
         /*
          * Should *our* server/inbound connections use SSL?  This is only true

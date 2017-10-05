@@ -98,6 +98,8 @@ enum argp_option_keys {
 #endif
         ARGP_LOCALTIME_LOGGING_KEY        = 177,
         ARGP_SUBDIR_MOUNT_KEY             = 178,
+        ARGP_CONNECT_MAX_RETRIES          = 179,
+        ARGP_CONNECT_RETRY_TIMEOUT        = 180,
 };
 
 struct _gfd_vol_top_priv {
