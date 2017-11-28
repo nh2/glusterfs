@@ -3822,8 +3822,29 @@ gf_boolean_t
 gf_is_pid_running (int pid)
 {
         char fname[32] = {0,};
+        char cmdline[1024] = {0,};
+        int  read_ret = 0;
 
         snprintf(fname, sizeof(fname), "/proc/%d/cmdline", pid);
+
+        // Check what the command line contents (beginning) are and log it.
+        FILE *f = fopen(fname, "r");
+        if (f == NULL) {
+            // The pid has vanished, the process is not running
+            return _gf_false;
+        } else {
+            read_ret = fread(cmdline, 1, sizeof(cmdline - 1), f);
+            if (ferror(f) != 0) {
+                // libc fread() doesn't give us a detailed error code.
+                gf_msg ("", GF_LOG_ERROR, 0, LG_MSG_FILE_OP_FAILED,
+                        "Failed to read /proc/%d/cmdline", pid);
+            } else {
+                GF_ASSERT (read_ret == sizeof(cmdline - 1));
+                gf_msg ("", GF_LOG_DEBUG, 0, LG_MSG_FILE_OP_FAILED,
+                        "Read /proc/%d/cmdline contents: %s", pid, cmdline);
+            }
+            fclose(f);
+        }
 
         if (sys_access (fname , R_OK) != 0) {
                 return _gf_false;
