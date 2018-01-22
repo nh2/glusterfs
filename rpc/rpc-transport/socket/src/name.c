@@ -331,6 +331,8 @@ af_unix_server_get_local_sockaddr (rpc_transport_t *this,
         int32_t ret = 0;
         struct sockaddr_un *sunaddr = (struct sockaddr_un *)addr;
 
+        gf_log (this->name, GF_LOG_WARNING,
+                "nh2: af_unix_server_get_local_sockaddr() called");
 
         listen_path_data = dict_get (this->options,
                                      "transport.socket.listen-path");
@@ -355,6 +357,10 @@ af_unix_server_get_local_sockaddr (rpc_transport_t *this,
                 ret = -1;
                 goto err;
         }
+
+        gf_log (this->name, GF_LOG_WARNING,
+                "nh2: af_unix_server_get_local_sockaddr() called with listen_path %s",
+                listen_path);
 
         sunaddr->sun_family = AF_UNIX;
         strcpy (sunaddr->sun_path, listen_path);
@@ -443,6 +449,9 @@ af_inet_server_get_local_sockaddr (rpc_transport_t *this,
         freeaddrinfo (res);
 
 out:
+        gf_log (this->name, GF_LOG_WARNING,
+                "nh2: getaddrinfo finished host %s, service '%s', listen_port %d, ret %d",
+                listen_host, service, listen_port, ret);
         return ret;
 }
 

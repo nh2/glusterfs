@@ -792,8 +792,9 @@ __socket_server_bind (rpc_transport_t *this)
 
         if (ret == -1) {
                 gf_log (this->name, GF_LOG_ERROR,
-                        "binding to %s failed: %s",
-                        this->myinfo.identifier, strerror (errno));
+                        "binding to %s failed: %s, %lu",
+                        this->myinfo.identifier, strerror (errno),
+                        ((struct sockaddr *)&this->myinfo.sockaddr)->sa_family);
                 if (errno == EADDRINUSE) {
                         gf_log (this->name, GF_LOG_ERROR,
                                 "Port is already in use");

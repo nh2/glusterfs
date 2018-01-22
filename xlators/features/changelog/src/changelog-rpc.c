@@ -155,6 +155,8 @@ changelog_destroy_rpc_listner (xlator_t *this, changelog_priv_t *priv)
 {
         char sockfile[UNIX_PATH_MAX] = {0,};
 
+        gf_msg_plain (GF_LOG_WARNING, "nh2 changelog_destroy_rpc_listner() creating socket");
+
         /* sockfile path could have been saved to avoid this */
         CHANGELOG_MAKE_SOCKET_PATH (priv->changelog_brick,
                                     sockfile, UNIX_PATH_MAX);
@@ -176,6 +178,9 @@ changelog_init_rpc_listener (xlator_t *this, changelog_priv_t *priv,
         ret = changelog_init_rpc_threads (this, priv, rbuf, nr_dispatchers);
         if (ret)
                 return NULL;
+
+        gf_msg_plain (GF_LOG_WARNING, "nh2 changelog_init_rpc_listener() creating socket");
+
 
         CHANGELOG_MAKE_SOCKET_PATH (priv->changelog_brick,
                                     sockfile, UNIX_PATH_MAX);

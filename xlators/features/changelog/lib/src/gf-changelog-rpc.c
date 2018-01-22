@@ -38,6 +38,8 @@ gf_changelog_rpc_init (xlator_t *this, gf_changelog_t *entry)
 {
         char sockfile[UNIX_PATH_MAX] = {0,};
 
+        gf_msg_plain (GF_LOG_WARNING, "nh2 gf_changelog_rpc_init() creating socket");
+
         CHANGELOG_MAKE_SOCKET_PATH (entry->brick,
                                     sockfile, UNIX_PATH_MAX);
         return changelog_rpc_client_init (this, entry,
